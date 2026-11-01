@@ -1,0 +1,59 @@
+name: Build SilverLink
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Baixar ASIO SDK (Steinberg)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Continue'
+          $dir = ''
+          try {
+            Invoke-WebRequest -Uri 'https://www.steinberg.net/asiosdk' -OutFile asiosdk.zip -MaximumRedirection 10
+            Expand-Archive asiosdk.zip -DestinationPath asiosdk_extract -Force
+            $h = Get-ChildItem -Path asiosdk_extract -Recurse -Filter asio.h | Where-Object { $_.Directory.Name -eq 'common' } | Select-Object -First 1
+            if ($h) { $dir = $h.Directory.Parent.FullName }
+          } catch { Write-Host "Download oficial falhou: $_" }
+          if ($dir) { Write-Host "ASIO SDK em $dir" } else { Write-Host "Usando copia do GitHub (CMake FetchContent)" }
+          "ASIOSDK_DIR=$dir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Configurar (CMake)
+        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64 "-DASIOSDK_DIR=${{ env.ASIOSDK_DIR }}"
+
+      - name: Compilar
+        run: cmake --build build --config Release --parallel
+
+      - name: Instalar Inno Setup (se faltar)
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
+
+      - name: Gerar instalador
+        shell: pwsh
+        run: |
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DBuildDir=$env:GITHUB_WORKSPACE\build\Release" installer\SilverLink.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Separar binarios
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Copy-Item build\Release\SilverLink.exe, build\Release\SilverLink_Controller.exe, build\Release\SilverLink_ASIO.dll, README.md, LICENSE dist\
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SilverLink-Setup
+          path: installer/Output/*.exe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SilverLink-binarios
+          path: dist/
