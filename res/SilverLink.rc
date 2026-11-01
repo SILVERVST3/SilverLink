@@ -1,0 +1,31 @@
+// SilverLink resources (icon + version info)
+#include <winver.h>
+
+1 ICON "silverlink.ico"
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,0
+ PRODUCTVERSION 1,0,0,0
+ FILEFLAGSMASK 0x3fL
+ FILEFLAGS 0x0L
+ FILEOS VOS_NT_WINDOWS32
+ FILETYPE VFT_APP
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "041604b0"
+        BEGIN
+            VALUE "CompanyName", "Jorge Prata Alves Junior"
+            VALUE "FileDescription", "SilverLink - audio em rede PC a PC"
+            VALUE "FileVersion", "1.0.0"
+            VALUE "LegalCopyright", "(C) 2026 Jorge Prata Alves Junior - GPLv3"
+            VALUE "ProductName", "SilverLink"
+            VALUE "ProductVersion", "1.0.0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x416, 1200
+    END
+END
